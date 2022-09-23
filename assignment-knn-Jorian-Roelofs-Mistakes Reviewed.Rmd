@@ -1,0 +1,138 @@
+---
+title: "Assigment - kNN DIY"
+author:
+  - Jorian Roelofs - Author
+  - Rick Messing - Reviewer
+date: "`r format(Sys.time(), '%d %B, %Y')`"
+output:
+   html_notebook:
+    toc: true
+    toc_depth: 2
+---
+##This is the version with the mistakes!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
+```{r}
+library(tidyverse)
+library(googlesheets4)
+library(class)
+library(caret)
+```
+
+---
+
+Choose a suitable dataset from [this](https://github.com/HAN-M3DM-Data-Mining/assignments/tree/master/datasets) folder and train  your own kNN model. Follow all the steps from the CRISP-DM model.
+
+
+
+
+## Business Understanding
+text and code here
+
+## Data Understanding
+text and code here
+
+```{r}
+url <- "https://raw.githubusercontent.com/HAN-M3DM-Data-Mining/assignments/master/datasets/KNN-occupancy.csv"
+rawDF <- read_csv(url)
+```
+```{r}
+str(rawDF)
+```
+
+
+## Data Preparation
+At first i want to clean the data so that i will only use the relevant information. 
+So what i am doing next is removing de date's in the rawDF file since it will not be used
+
+```{r}
+##randomize
+cleanDF_R <- rawDF[sample(1:nrow(rawDF)),]
+cleanDF <- cleanDF_R[-1]
+head(cleanDF)
+```
+At the variable Occupancy contains of two different outcomes, namely 1 or 0. This likely indicates
+the "occupancy" for either true or false
+
+So now i will be counting each of these outcomes and the percentage it occurs
+
+```{r}
+cntOcc <- table(cleanDF$Occupancy)
+propOcc <- round(prop.table(cntOcc)*100, digits = 1)
+
+cntOcc
+propOcc
+```
+
+Now i am going to change the variable type from character to facter using the function "factor",
+it will now saw "Occupancy" or "No occupancy"
+
+```{r}
+cleanDF$Occupancy <- factor(cleanDF$Occupancy, levels = c("0", "1"), labels = c("No occupancy", "Occupancy")) %>% relevel("Occupancy")
+head(cleanDF)
+```
+Now i am going to look at some different measurements using "summery"
+
+```{r}
+summary(cleanDF[c("Temperature", "Humidity", "Light", "CO2")])
+```
+
+Here i apply normalization to rescale all the features to a standard range of values
+
+```{r}
+normalize <- function(x) { 
+  return ((x - min(x)) / (max(x) - min(x))) 
+}
+
+testSet1 <- c(1:5)
+testSet2 <- c(1:5) * 10
+
+cat("testSet1:", testSet1, "\n")
+cat("testSet2:", testSet2, "\n")
+cat("Normalized testSet1:", normalize(testSet1), "\n")
+cat("Normalized testSet2:", normalize(testSet2))
+
+```
+
+The next code puts "Occupancy" at the front of the table
+```{r}
+cleanDF <- cleanDF[, c(6,1,2,3,4,5)]
+head(cleanDF)
+```
+Applying the normalize function to each feature using the sapply function
+```{r}
+nCols <- dim(cleanDF)[2]
+cleanDF_n <- sapply(2:nCols,
+                    function(x) {
+  normalize(cleanDF[,x])
+}) %>% as.data.frame()
+
+summary(cleanDF_n[,1:5])
+```
+
+Testing the normalization
+
+```{r}
+trainDF_feat <- cleanDF_n[1:7000,  ]
+testDF_feat <- cleanDF_n[7001:8143,  ]
+
+trainDF_labels <- cleanDF[1:7000,  1]
+testDF_labels <- cleanDF[7001:8143,  1]
+```
+
+## Modeling
+
+```{r}
+cleanDF_test_pred <- knn(train = as.matrix(trainDF_feat), test = as.matrix(testDF_feat), cl = as.matrix(trainDF_labels), k = 21)
+head(cleanDF_test_pred)
+```
+
+```{r}
+confusionMatrix(cleanDF_test_pred, testDF_labels[[1]], positive = NULL, dnn = c("Prediction", "True"))
+```
+
+## Evaluation and Deployment
+text and code here
+
+On Line 102 there is error message. This is because there is an object missing. This could be fixed by adding: nCols <- dim(cleanDF)[2]
+Afterwards i got an error saying there is a function missing knn. So i added library(class) to fix it. 
+When inspecting the code i found a typo/error in the order of the cleanDF. I changed it back. 
