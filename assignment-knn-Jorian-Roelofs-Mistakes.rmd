@@ -2,7 +2,7 @@
 title: "Assigment - kNN DIY"
 author:
   - Jorian Roelofs - Author
-  - name reviewer here - Reviewer
+  - Rick Messing - Reviewer
 date: "`r format(Sys.time(), '%d %B, %Y')`"
 output:
    html_notebook:
